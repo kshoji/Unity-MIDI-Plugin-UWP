@@ -7,6 +7,30 @@ using Windows.Devices.Midi;
 
 namespace jp.kshoji.unity.midi.uwp
 {
+    public delegate void OnMidiInputDeviceAttachedHandler(string deviceId);
+    public delegate void OnMidiInputDeviceDetachedHandler(string deviceId);
+    public delegate void OnMidiOutputDeviceAttachedHandler(string deviceId);
+    public delegate void OnMidiOutputDeviceDetachedHandler(string deviceId);
+
+    public delegate void OnMidiNoteOnHandler(string deviceId, byte channel, byte note, byte velocity);
+    public delegate void OnMidiNoteOffHandler(string deviceId, byte channel, byte note, byte velocity);
+    public delegate void OnMidiPolyphonicKeyPressureHandler(string deviceId, byte channel, byte note, byte velocity);
+    public delegate void OnMidiControlChangeHandler(string deviceId, byte channel, byte controller, byte controllerValue);
+    public delegate void OnMidiProgramChangeHandler(string deviceId, byte channel, byte program);
+    public delegate void OnMidiChannelPressureHandler(string deviceId, byte channel, byte pressure);
+    public delegate void OnMidiPitchBendChangeHandler(string deviceId, byte channel, ushort bend);
+    public delegate void OnMidiSystemExclusiveHandler(string deviceId, [ReadOnlyArray] byte[] systemExclusive);
+    public delegate void OnMidiTimeCodeHandler(string deviceId, byte frameType, byte values);
+    public delegate void OnMidiSongPositionPointerHandler(string deviceId, ushort beats);
+    public delegate void OnMidiSongSelectHandler(string deviceId, byte song);
+    public delegate void OnMidiTuneRequestHandler(string deviceId);
+    public delegate void OnMidiTimingClockHandler(string deviceId);
+    public delegate void OnMidiStartHandler(string deviceId);
+    public delegate void OnMidiContinueHandler(string deviceId);
+    public delegate void OnMidiStopHandler(string deviceId);
+    public delegate void OnMidiActiveSensingHandler(string deviceId);
+    public delegate void OnMidiSystemResetHandler(string deviceId);
+
     /// <summary>
     /// MIDI Plugin for UWP
     /// </summary>
@@ -80,13 +104,9 @@ namespace jp.kshoji.unity.midi.uwp
         private Dictionary<string, IMidiOutPort> outPorts = new Dictionary<string, IMidiOutPort>();
         private Dictionary<string, DeviceInformation> deviceInformations = new Dictionary<string, DeviceInformation>();
 
-        public delegate void OnMidiInputDeviceAttachedHandler(string deviceId);
         public event OnMidiInputDeviceAttachedHandler OnMidiInputDeviceAttached;
-        public delegate void OnMidiInputDeviceDetachedHandler(string deviceId);
         public event OnMidiInputDeviceDetachedHandler OnMidiInputDeviceDetached;
-        public delegate void OnMidiOutputDeviceAttachedHandler(string deviceId);
         public event OnMidiOutputDeviceAttachedHandler OnMidiOutputDeviceAttached;
-        public delegate void OnMidiOutputDeviceDetachedHandler(string deviceId);
         public event OnMidiOutputDeviceDetachedHandler OnMidiOutputDeviceDetached;
 
         private async void InPortDeviceAdded(DeviceWatcher deviceWatcher, DeviceInformation deviceInformation)
@@ -220,41 +240,23 @@ namespace jp.kshoji.unity.midi.uwp
         #endregion
 
         #region MidiEventReceiving
-        public delegate void OnMidiNoteOnHandler(string deviceId, byte channel, byte note, byte velocity);
         public event OnMidiNoteOnHandler OnMidiNoteOn;
-        public delegate void OnMidiNoteOffHandler(string deviceId, byte channel, byte note, byte velocity);
         public event OnMidiNoteOffHandler OnMidiNoteOff;
-        public delegate void OnMidiPolyphonicKeyPressureHandler(string deviceId, byte channel, byte note, byte velocity);
         public event OnMidiPolyphonicKeyPressureHandler OnMidiPolyphonicKeyPressure;
-        public delegate void OnMidiControlChangeHandler(string deviceId, byte channel, byte controller, byte controllerValue);
         public event OnMidiControlChangeHandler OnMidiControlChange;
-        public delegate void OnMidiProgramChangeHandler(string deviceId, byte channel, byte program);
         public event OnMidiProgramChangeHandler OnMidiProgramChange;
-        public delegate void OnMidiChannelPressureHandler(string deviceId, byte channel, byte pressure);
         public event OnMidiChannelPressureHandler OnMidiChannelPressure;
-        public delegate void OnMidiPitchBendChangeHandler(string deviceId, byte channel, ushort bend);
         public event OnMidiPitchBendChangeHandler OnMidiPitchBendChange;
-        public delegate void OnMidiSystemExclusiveHandler(string deviceId, byte[] systemExclusive);
         public event OnMidiSystemExclusiveHandler OnMidiSystemExclusive;
-        public delegate void OnMidiTimeCodeHandler(string deviceId, byte frameType, byte values);
         public event OnMidiTimeCodeHandler OnMidiTimeCode;
-        public delegate void OnMidiSongPositionPointerHandler(string deviceId, ushort beats);
         public event OnMidiSongPositionPointerHandler OnMidiSongPositionPointer;
-        public delegate void OnMidiSongSelectHandler(string deviceId, byte song);
         public event OnMidiSongSelectHandler OnMidiSongSelect;
-        public delegate void OnMidiTuneRequestHandler(string deviceId);
         public event OnMidiTuneRequestHandler OnMidiTuneRequest;
-        public delegate void OnMidiTimingClockHandler(string deviceId);
         public event OnMidiTimingClockHandler OnMidiTimingClock;
-        public delegate void OnMidiStartHandler(string deviceId);
         public event OnMidiStartHandler OnMidiStart;
-        public delegate void OnMidiContinueHandler(string deviceId);
         public event OnMidiContinueHandler OnMidiContinue;
-        public delegate void OnMidiStopHandler(string deviceId);
         public event OnMidiStopHandler OnMidiStop;
-        public delegate void OnMidiActiveSensingHandler(string deviceId);
         public event OnMidiActiveSensingHandler OnMidiActiveSensing;
-        public delegate void OnMidiSystemResetHandler(string deviceId);
         public event OnMidiSystemResetHandler OnMidiSystemReset;
 
         private void InPortMessageReceived(MidiInPort sender, MidiMessageReceivedEventArgs args)
@@ -490,7 +492,7 @@ namespace jp.kshoji.unity.midi.uwp
         /// </summary>
         /// <param name="deviceId">the device ID</param>
         /// <param name="systemExclusive">the system exclusive data</param>
-        public void SendMidiSystemExclusive(string deviceId, byte[] systemExclusive)
+        public void SendMidiSystemExclusive(string deviceId, [ReadOnlyArray] byte[] systemExclusive)
         {
             lock (outPorts)
             {
