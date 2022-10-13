@@ -83,16 +83,34 @@ namespace jp.kshoji.unity.midi.uwp
             inPortDeviceWatcher.Removed -= InPortDeviceRemoved;
             inPortDeviceWatcher.Stop();
             inPortDeviceWatcher = null;
-            inPorts.Clear();
+            lock (inPorts)
+            {
+                foreach (var inPort in inPorts)
+                {
+                    inPort.Value.MessageReceived -= InPortMessageReceived;
+                    inPort.Value.Dispose();
+                }
+                inPorts.Clear();
+            }
 
             outPortDeviceWatcher.Added -= OutPortDeviceAdded;
             outPortDeviceWatcher.Updated -= OutPortDeviceUpdated;
             outPortDeviceWatcher.Removed -= OutPortDeviceRemoved;
             outPortDeviceWatcher.Stop();
             outPortDeviceWatcher = null;
-            outPorts.Clear();
+            lock (outPorts)
+            {
+                foreach (var outPort in outPorts)
+                {
+                    outPort.Value.Dispose();
+                }
+                outPorts.Clear();
+            }
 
-            deviceInformations.Clear();
+            lock (deviceInformations)
+            {
+                deviceInformations.Clear();
+            }
         }
         #endregion
 
@@ -159,6 +177,7 @@ namespace jp.kshoji.unity.midi.uwp
                 if (inPorts.ContainsKey(deviceInformation.Id))
                 {
                     inPorts[deviceInformation.Id].MessageReceived -= InPortMessageReceived;
+                    inPorts[deviceInformation.Id].Dispose();
                     inPorts.Remove(deviceInformation.Id);
                     OnMidiInputDeviceDetached?.Invoke(deviceInformation.Id);
                 }
@@ -214,6 +233,7 @@ namespace jp.kshoji.unity.midi.uwp
             {
                 if (outPorts.ContainsKey(deviceInformation.Id))
                 {
+                    outPorts[deviceInformation.Id].Dispose();
                     outPorts.Remove(deviceInformation.Id);
                     OnMidiOutputDeviceDetached?.Invoke(deviceInformation.Id);
                 }
@@ -508,7 +528,7 @@ namespace jp.kshoji.unity.midi.uwp
         /// </summary>
         /// <param name="deviceId">the device ID</param>
         /// <param name="frameType">the frame type(0-7)</param>
-        /// <param name="values">the time code(0-32)</param>
+        /// <param name="values">the time code(0-15)</param>
         public void SendMidiTimeCode(string deviceId, byte frameType, byte values)
         {
             lock (outPorts)
