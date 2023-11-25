@@ -129,22 +129,38 @@ namespace jp.kshoji.unity.midi.uwp
 
         private async void InPortDeviceAdded(DeviceWatcher deviceWatcher, DeviceInformation deviceInformation)
         {
-            lock (deviceInformations)
+            var deviceId = deviceInformation.Id;
+            if (deviceInformation.Properties.ContainsKey("System.Devices.ContainerId"))
             {
-                if (!deviceInformations.ContainsKey(deviceInformation.Id))
+                var containerId = deviceInformation.Properties["System.Devices.ContainerId"];
+                var selectorWithContainer = $"System.Devices.ContainerId:=\"{{{containerId}}}\"";
+                var serviceInformations = await DeviceInformation.FindAllAsync(selectorWithContainer);
+                foreach (var serviceInformation in serviceInformations)
                 {
-                    deviceInformations.Add(deviceInformation.Id, deviceInformation);
+                    if (serviceInformation.Properties.ContainsKey("System.Devices.DeviceInstanceId"))
+                    {
+                        deviceInformation = serviceInformation;
+                        break;
+                    }
                 }
             }
 
-            var midiInPort = await MidiInPort.FromIdAsync(deviceInformation.Id);
+            lock (deviceInformations)
+            {
+                if (!deviceInformations.ContainsKey(deviceId))
+                {
+                    deviceInformations.Add(deviceId, deviceInformation);
+                }
+            }
+
+            var midiInPort = await MidiInPort.FromIdAsync(deviceId);
             if (midiInPort != null)
             {
                 midiInPort.MessageReceived += InPortMessageReceived;
                 lock (inPorts)
                 {
-                    inPorts.Add(deviceInformation.Id, midiInPort);
-                    OnMidiInputDeviceAttached?.Invoke(deviceInformation.Id);
+                    inPorts.Add(deviceId, midiInPort);
+                    OnMidiInputDeviceAttached?.Invoke(deviceId);
                 }
             }
         }
@@ -186,21 +202,37 @@ namespace jp.kshoji.unity.midi.uwp
 
         private async void OutPortDeviceAdded(DeviceWatcher deviceWatcher, DeviceInformation deviceInformation)
         {
-            lock (deviceInformations)
+            var deviceId = deviceInformation.Id;
+            if (deviceInformation.Properties.ContainsKey("System.Devices.ContainerId"))
             {
-                if (!deviceInformations.ContainsKey(deviceInformation.Id))
+                var containerId = deviceInformation.Properties["System.Devices.ContainerId"];
+                var selectorWithContainer = $"System.Devices.ContainerId:=\"{{{containerId}}}\"";
+                var serviceInformations = await DeviceInformation.FindAllAsync(selectorWithContainer);
+                foreach (var serviceInformation in serviceInformations)
                 {
-                    deviceInformations.Add(deviceInformation.Id, deviceInformation);
+                    if (serviceInformation.Properties.ContainsKey("System.Devices.DeviceInstanceId"))
+                    {
+                        deviceInformation = serviceInformation;
+                        break;
+                    }
                 }
             }
 
-            var midiOutPort = await MidiOutPort.FromIdAsync(deviceInformation.Id);
+            lock (deviceInformations)
+            {
+                if (!deviceInformations.ContainsKey(deviceId))
+                {
+                    deviceInformations.Add(deviceId, deviceInformation);
+                }
+            }
+
+            var midiOutPort = await MidiOutPort.FromIdAsync(deviceId);
             if (midiOutPort != null)
             {
                 lock (outPorts)
                 {
-                    outPorts.Add(deviceInformation.Id, midiOutPort);
-                    OnMidiOutputDeviceAttached?.Invoke(deviceInformation.Id);
+                    outPorts.Add(deviceId, midiOutPort);
+                    OnMidiOutputDeviceAttached?.Invoke(deviceId);
                 }
             }
         }
@@ -252,6 +284,78 @@ namespace jp.kshoji.unity.midi.uwp
                 if (deviceInformations.ContainsKey(deviceId))
                 {
                     return deviceInformations[deviceId].Name;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Get the device vendor id from specified device ID.
+        /// </summary>
+        /// <param name="deviceId">the device ID</param>
+        /// <returns>the device name, empty if device not connected.</returns>
+        public string GetVendorId(string deviceId)
+        {
+            lock (deviceInformations)
+            {
+                if (deviceInformations.ContainsKey(deviceId))
+                {
+                    if (deviceInformations[deviceId].Properties.TryGetValue("System.Devices.DeviceInstanceId", out var deviceInstanceId))
+                    {
+                        var deviceInstanceIdString = deviceInstanceId as string;
+                        if (deviceInstanceIdString == null)
+                        {
+                            return string.Empty;
+                        }
+
+                        // USB\VID_XXXX&PID_XXXX\xxxxxxxx
+                        var splitted = deviceInstanceIdString.Split('\\');
+                        if (splitted.Length > 1)
+                        {
+                            var vidPidSplitted = splitted[1].Split('&');
+                            if (vidPidSplitted.Length > 1)
+                            {
+                                return vidPidSplitted[0];
+                            }
+                        }
+                    }
+                }
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// Get the device product id from specified device ID.
+        /// </summary>
+        /// <param name="deviceId">the device ID</param>
+        /// <returns>the device name, empty if device not connected.</returns>
+        public string GetProductId(string deviceId)
+        {
+            lock (deviceInformations)
+            {
+                if (deviceInformations.ContainsKey(deviceId))
+                {
+                    if (deviceInformations[deviceId].Properties.TryGetValue("System.Devices.DeviceInstanceId", out var deviceInstanceId))
+                    {
+                        var deviceInstanceIdString = deviceInstanceId as string;
+                        if (deviceInstanceIdString == null)
+                        {
+                            return string.Empty;
+                        }
+
+                        // USB\VID_XXXX&PID_XXXX\xxxxxxxx
+                        var splitted = deviceInstanceIdString.Split('\\');
+                        if (splitted.Length > 1)
+                        {
+                            var vidPidSplitted = splitted[1].Split('&');
+                            if (vidPidSplitted.Length > 1)
+                            {
+                                return vidPidSplitted[1];
+                            }
+                        }
+                    }
                 }
             }
 
