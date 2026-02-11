@@ -125,9 +125,17 @@
     <EmbeddedResource Include="Properties\MidiPlugin.rd.xml" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.Windows.Devices.Midi2">
+      <IsWinMD>true</IsWinMD>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
-      <Version>6.2.13</Version>
+      <Version>6.2.14</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>

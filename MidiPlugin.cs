@@ -31,6 +31,11 @@ namespace jp.kshoji.unity.midi.uwp
     public delegate void OnMidiActiveSensingHandler(string deviceId);
     public delegate void OnMidiSystemResetHandler(string deviceId);
 
+    public delegate void OnMidi2InputDeviceAttachedHandler(string deviceId);
+    public delegate void OnMidi2InputDeviceDetachedHandler(string deviceId);
+    public delegate void OnMidi2OutputDeviceAttachedHandler(string deviceId);
+    public delegate void OnMidi2OutputDeviceDetachedHandler(string deviceId);
+
     /// <summary>
     /// MIDI Plugin for UWP
     /// </summary>
@@ -74,6 +79,43 @@ namespace jp.kshoji.unity.midi.uwp
             outPortDeviceWatcher.Updated += OutPortDeviceUpdated;
             outPortDeviceWatcher.Removed += OutPortDeviceRemoved;
             outPortDeviceWatcher.Start();
+
+            try
+            {
+                InitializeMidi2();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.ToString());
+            }
+        }
+
+        void InitializeMidi2()
+        {
+            umpDeviceWatcher = Microsoft.Windows.Devices.Midi2.MidiEndpointDeviceWatcher.Create(Microsoft.Windows.Devices.Midi2.MidiEndpointDeviceInformationFilters.StandardNativeUniversalMidiPacketFormat);
+            umpDeviceWatcher.Added += UmpDeviceAdded;
+            umpDeviceWatcher.Updated += UmpDeviceUpdated;
+            umpDeviceWatcher.Removed += UmpDeviceRemoved;
+            umpDeviceWatcher.Start();
+        }
+
+        private void UmpDeviceAdded(Microsoft.Windows.Devices.Midi2.MidiEndpointDeviceWatcher sender, Microsoft.Windows.Devices.Midi2.MidiEndpointDeviceInformationAddedEventArgs args)
+        {
+            Debug.WriteLine($"UmpDeviceAdded device: {args.AddedDevice}, deviceId: {args.AddedDevice.EndpointDeviceId}, instanceId: {args.AddedDevice.DeviceInstanceId}");
+            OnMidi2InputDeviceAttached?.Invoke(args.AddedDevice.EndpointDeviceId);
+            OnMidi2OutputDeviceAttached?.Invoke(args.AddedDevice.EndpointDeviceId);
+        }
+
+        private void UmpDeviceUpdated(Microsoft.Windows.Devices.Midi2.MidiEndpointDeviceWatcher sender, Microsoft.Windows.Devices.Midi2.MidiEndpointDeviceInformationUpdatedEventArgs args)
+        {
+            Debug.WriteLine($"UmpDeviceUpdated deviceId: {args.EndpointDeviceId}");
+        }
+
+        private void UmpDeviceRemoved(Microsoft.Windows.Devices.Midi2.MidiEndpointDeviceWatcher sender, Microsoft.Windows.Devices.Midi2.MidiEndpointDeviceInformationRemovedEventArgs args)
+        {
+            Debug.WriteLine($"UmpDeviceRemoved deviceId: {args.EndpointDeviceId}");
+            OnMidi2InputDeviceDetached?.Invoke(args.EndpointDeviceId);
+            OnMidi2OutputDeviceDetached?.Invoke(args.EndpointDeviceId);
         }
 
         ~MidiPlugin()
@@ -107,16 +149,26 @@ namespace jp.kshoji.unity.midi.uwp
                 outPorts.Clear();
             }
 
+            if (umpDeviceWatcher != null)
+            {
+                umpDeviceWatcher.Added -= UmpDeviceAdded;
+                umpDeviceWatcher.Updated -= UmpDeviceUpdated;
+                umpDeviceWatcher.Removed -= UmpDeviceRemoved;
+                umpDeviceWatcher.Stop();
+                umpDeviceWatcher = null;
+            }
+
             lock (deviceInformations)
             {
                 deviceInformations.Clear();
             }
         }
-        #endregion
+#endregion
 
         #region MidiDeviceConnection
         private DeviceWatcher inPortDeviceWatcher;
         private DeviceWatcher outPortDeviceWatcher;
+        private Microsoft.Windows.Devices.Midi2.MidiEndpointDeviceWatcher umpDeviceWatcher;
 
         private Dictionary<string, MidiInPort> inPorts = new Dictionary<string, MidiInPort>();
         private Dictionary<string, IMidiOutPort> outPorts = new Dictionary<string, IMidiOutPort>();
@@ -126,6 +178,11 @@ namespace jp.kshoji.unity.midi.uwp
         public event OnMidiInputDeviceDetachedHandler OnMidiInputDeviceDetached;
         public event OnMidiOutputDeviceAttachedHandler OnMidiOutputDeviceAttached;
         public event OnMidiOutputDeviceDetachedHandler OnMidiOutputDeviceDetached;
+
+        public event OnMidi2InputDeviceAttachedHandler OnMidi2InputDeviceAttached;
+        public event OnMidi2InputDeviceDetachedHandler OnMidi2InputDeviceDetached;
+        public event OnMidi2OutputDeviceAttachedHandler OnMidi2OutputDeviceAttached;
+        public event OnMidi2OutputDeviceDetachedHandler OnMidi2OutputDeviceDetached;
 
         private async void InPortDeviceAdded(DeviceWatcher deviceWatcher, DeviceInformation deviceInformation)
         {
