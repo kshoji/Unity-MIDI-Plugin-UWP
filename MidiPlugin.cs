@@ -74,7 +74,6 @@ namespace jp.kshoji.unity.midi.uwp
             outPortDeviceWatcher.Updated += OutPortDeviceUpdated;
             outPortDeviceWatcher.Removed += OutPortDeviceRemoved;
             outPortDeviceWatcher.Start();
-
         }
 
         ~MidiPlugin()
